@@ -82,9 +82,12 @@ group by user_id;
 
 -- products per order and number of total orders by customer
 -- joining above with number of orders per customer, adding column to bin how often customers order
-select a.user_id, round(a.products_per_order,2), b.num_orders,
+--not to self, remember to say why the below cut offs were chosen for the different frequencies, I think the numbers come from an earlier query
+create table product_order_analysis as
+(
+select a.user_id, round(a.products_per_order,2) products_per_order , b.num_orders, round((a.products_per_order * b.num_orders),2) total_products, 
 Case
-    when b.num_orders = 4 
+    when b.num_orders = 4   -- could even right as a further sub query
         then 'min frequency'
     when b.num_orders between 5 and 9
         then 'low frequency'
@@ -93,7 +96,7 @@ Case
     when b.num_orders between 11 and 99
         then 'high frequency'
     when b.num_orders = 100
-        then ' max frequency'
+        then 'max frequency'
 end customer_order_frequency
 from (
     select user_id, avg(prod_count) products_per_order
@@ -114,4 +117,31 @@ join (
     group by o.user_id
     ) b
     on a.user_id = b.user_id
+);
+
+select * from product_order_analysis;
+
+--this table is used to compare the number of products being ordered per order across customers who order at different frequencies
+--the results indicate that the average products per order do not change as customers' order frequency changes. This means on average, customers who order more in a single site vist do not do so because they visit less reqularly and vice versa for higher frequency shoppers.
+--As a result insta cart finds more value in higher frequency shoppers because those customers overall order more products.
+select
+    customer_order_frequency,
+    count(*) num_customer,
+    min(products_per_order) min_products_per_order,
+    max(products_per_order) max_products_per_order,
+    median(products_per_order) median_products_per_order,
+    round(avg(products_per_order), 2) avg_products_per_order,
+    stats_mode(products_per_order) mode_products_per_order,
+    round(avg(total_products), 2) avg_total_products
+from product_order_analysis
+group by customer_order_frequency
+/*order by 
+    case
+        when customer_order_frequency = 'min frequency' then 1
+        when customer_order_frequency = 'low frequency' then 2
+        when customer_order_frequency = 'median frequency' then 3
+        when customer_order_frequency = 'high frequency' then 4
+        when customer_order_frequency = 'max frequency' then 5
+    end */
+    order by decode(customer_order_frequency, 'min frequency', 1, 'low frequency', 2, 'median frequency', 3, 'high frequency', 4, 'max frequency', 5)
 ;

@@ -12,13 +12,75 @@ fetch first 10 rows only;
 select * from products
 fetch first 10 rows only;
 
---shows must commonly ordered items
+--shows most commonly ordered items
+--maybe remove later and only leave a more detailed query with department and/or ailse info below
 select p.product_name, count(*)
 from products p
 join orders_products_prior op on p.product_id = op.product_id
 group by p.product_name
 order by count(*) desc
 fetch first 10 rows only;
+
+--shows most commonly ordered items by with department and aisle
+--avacado is a fruit
+select p.product_name, d.department,a.aisle, count(*)
+from products p
+join orders_products_prior op on p.product_id = op.product_id
+join departments d on d.department_id = p.department_id
+join aisles a on a.aisle_id = p.aisle_id
+group by p.product_name, d.department, a.aisle
+order by count(*) desc
+fetch first 10 rows only;
+
+select * from departments;
+
+select * from aisles;
+
+--most common departments in orders
+--produce is by far the most common department while bulk is the least. As a result stores would be best set up in such a way that the produce department where people regularly shop for fresh food is most accesible while bulk goods that people only need to buy occasionally is more tucked away.
+select d.department, count(*)
+from products p
+join orders_products_prior op on p.product_id = op.product_id
+join departments d on d.department_id = p.department_id
+group by d.department
+order by count(*) desc;
+
+--most common products for each department
+-- could rewrite with with clauses if desired
+--shows product name with the most common orders ordered by the most common deparments 
+select a. product_name, a.department, order_num
+from 
+    (
+    select product_name, department, order_num, rank() over (partition by department order by order_num desc) as product_rank
+    from
+        (
+        select p.product_name, d.department, count(*) order_num
+        from products p
+        join orders_products_prior op on p.product_id = op.product_id
+        join departments d on d.department_id = p.department_id
+        group by p.product_name, d.department
+        order by count(*) desc
+        ) 
+    order by order_num desc
+    ) a
+join 
+    (
+    select department, dep_order_num ,department_rank
+    from
+        (
+        select d.department, count(*) dep_order_num,  rank() over (order by count(*) desc) as department_rank
+        from products p
+        join orders_products_prior op on p.product_id = op.product_id
+        join departments d on d.department_id = p.department_id
+        group by d.department
+        order by count(*) desc
+        )
+    ) b
+    on a.department = b.department
+where product_rank <= 3
+order by b.department_rank, a.product_rank
+;
+
 
 --testing to see if there are any orders where there is a product that cannot be found in the products table and vise versa
 -- this lets us know that data has some flaws, namely there is no correspoding product for product ID 6816, highlighting the importance of data integrity
@@ -28,7 +90,7 @@ from products p
 full outer join orders_products_prior op on p.product_id = op.product_id
 where p.product_name is null or op.order_id is null;
 
---want know if a produt can be ordered multipe times in the same order
+--want know if a product can be ordered multipe times in the same order
 --this shows that each product is not duplicated within an order.  Order quantity for each product is not known
 select op.order_id, p.product_id, count(*)
 from products p
@@ -145,3 +207,11 @@ group by customer_order_frequency
     end */
     order by decode(customer_order_frequency, 'min frequency', 1, 'low frequency', 2, 'median frequency', 3, 'high frequency', 4, 'max frequency', 5)
 ;
+
+-- Top overal products
+select p.product_name, count(p.product_name) product_order_count
+from orders_products_prior opp
+join products p on opp.product_id = p.product_id
+group by p.product_name
+order by product_order_count desc;
+

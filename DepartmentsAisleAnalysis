@@ -108,7 +108,7 @@ join
 where product_rank <= 3
 order by b.aisle_rank, a.product_rank;
 
---inverstigating the above query but with added departments
+--investigating the above query but with added departments
 -- as we can while the frozen juice ailse is the least frequented ailse, the other ailses in the frozen department drag up the number of orders which is why we see the bulk department lower in the deopartments query.
 select a.product_name, a.aisle, d.department, a.order_num
 from 

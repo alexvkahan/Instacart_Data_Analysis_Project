@@ -1,0 +1,148 @@
+select * from departments;
+
+select * from aisles;
+
+--shows most commonly ordered items by with department and aisle
+--avacado is a fruit
+select p.product_name, d.department,a.aisle, count(*)
+from products p
+join orders_products_prior op on p.product_id = op.product_id
+join departments d on d.department_id = p.department_id
+join aisles a on a.aisle_id = p.aisle_id
+group by p.product_name, d.department, a.aisle
+order by count(*) desc
+fetch first 10 rows only;
+
+--most common departments in orders
+--produce is by far the most common department while bulk is the least. As a result stores would be best set up in such a way that the produce department where people regularly shop for fresh food is most accesible while bulk goods that people only need to buy occasionally is more tucked away.
+select d.department, count(*)
+from products p
+join orders_products_prior op on p.product_id = op.product_id
+join departments d on d.department_id = p.department_id
+group by d.department
+order by count(*) desc;
+
+--most common products for each department
+-- could rewrite with with clauses if desired
+--shows product name with the most common orders ordered by the most common deparments 
+select a. product_name, a.department, order_num
+from 
+    (
+    select product_name, department, order_num, rank() over (partition by department order by order_num desc) as product_rank
+    from
+        (
+        select p.product_name, d.department, count(*) order_num
+        from products p
+        join orders_products_prior op on p.product_id = op.product_id
+        join departments d on d.department_id = p.department_id
+        group by p.product_name, d.department
+        order by count(*) desc
+        ) 
+    order by order_num desc
+    ) a
+join 
+    (
+    select department, dep_order_num ,department_rank
+    from
+        (
+        select d.department, count(*) dep_order_num,  rank() over (order by count(*) desc) as department_rank
+        from products p
+        join orders_products_prior op on p.product_id = op.product_id
+        join departments d on d.department_id = p.department_id
+        group by d.department
+        order by count(*) desc
+        )
+    ) b
+    on a.department = b.department
+where product_rank <= 3
+order by b.department_rank, a.product_rank
+;
+
+
+--now for the same but with ailses
+
+
+--most common Aisles in orders
+--The result of fresh fruites and vegitbles being the most common makes sense given the prior quires showing produce to be the most common departmentby order number.
+select a.aisle, count(*)
+from products p
+join orders_products_prior op on p.product_id = op.product_id
+join aisles a on a.aisle_id = p.aisle_id
+group by a.aisle
+order by count(*) desc;
+
+--most common products for each aisle
+-- could rewrite with with clauses if desired
+--shows product name with the most common orders ordered by the most common aisle
+-- interestinly while the most common ailse center around fresh produce as seen the the departments query, the least common ailses by orders is the frozen juice aisle  which sounds like it would not be in the bulk department which was the least common depatment
+-- we can investigate this farther by joining departments to the query to see how they overlap
+select a.product_name, a.aisle, a.order_num
+from 
+    (
+    select product_name, aisle, order_num, rank() over (partition by aisle order by order_num desc) as product_rank
+    from
+        (
+        select p.product_name, aisles.aisle, count(*) order_num
+        from products p
+        join orders_products_prior op on p.product_id = op.product_id
+        join aisles on aisles.aisle_id = p.aisle_id
+        group by p.product_name, aisles.aisle
+        order by count(*) desc
+        ) 
+    order by order_num desc
+    ) a
+join 
+    (
+    select aisle, aisle_order_num, aisle_rank
+    from
+        (
+        select aisles.aisle, count(*) aisle_order_num,  rank() over (order by count(*) desc) as aisle_rank
+        from products p
+        join orders_products_prior op on p.product_id = op.product_id
+        join aisles on aisles.aisle_id = p.aisle_id
+        group by aisles.aisle
+        order by count(*) desc
+        )
+    ) b
+    on a.aisle = b.aisle
+where product_rank <= 3
+order by b.aisle_rank, a.product_rank;
+
+--inverstigating the above query but with added departments
+-- as we can while the frozen juice ailse is the least frequented ailse, the other ailses in the frozen department drag up the number of orders which is why we see the bulk department lower in the deopartments query.
+select a.product_name, a.aisle, d.department, a.order_num
+from 
+    (
+    select product_name, aisle, order_num, rank() over (partition by aisle order by order_num desc) as product_rank
+    from
+        (
+        select p.product_name, aisles.aisle, count(*) order_num
+        from products p
+        join orders_products_prior op on p.product_id = op.product_id
+        join aisles on aisles.aisle_id = p.aisle_id
+        group by p.product_name, aisles.aisle
+        order by count(*) desc
+        ) 
+    order by order_num desc
+    ) a
+join 
+    (
+    select aisle, aisle_order_num, aisle_rank
+    from
+        (
+        select aisles.aisle, count(*) aisle_order_num,  rank() over (order by count(*) desc) as aisle_rank
+        from products p
+        join orders_products_prior op on p.product_id = op.product_id
+        join aisles on aisles.aisle_id = p.aisle_id
+        group by aisles.aisle
+        order by count(*) desc
+        )
+    ) b
+    on a.aisle = b.aisle
+join products p
+    on p.product_name = a.product_name  -- these joins could be rewriten to keep the relevent id's in the earlier subqueries 
+join departments d
+    on p.department_id = d.department_id
+where product_rank <= 3
+ and department = 'frozen' or department = 'bulk'
+order by b.aisle_rank, a.product_rank;

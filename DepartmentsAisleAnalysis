@@ -144,5 +144,5 @@ join products p
 join departments d
     on p.department_id = d.department_id
 where product_rank <= 3
- and department = 'frozen' or department = 'bulk'
+ and (department = 'frozen' or department = 'bulk')
 order by b.aisle_rank, a.product_rank;

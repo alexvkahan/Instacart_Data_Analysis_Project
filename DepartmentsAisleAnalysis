@@ -72,9 +72,8 @@ group by a.aisle
 order by count(*) desc;
 
 --most common products for each aisle
--- could rewrite with with clauses if desired
 --shows product name with the most common orders ordered by the most common aisle
--- interestinly while the most common ailse center around fresh produce as seen the the departments query, the least common ailses by orders is the frozen juice aisle  which sounds like it would not be in the bulk department which was the least common depatment
+-- interestingly while the most common aisle center around fresh produce as seen the the departments query, the least common aisles by orders is the frozen juice aisle which sounds like it would not be in the bulk department which was the least common department
 -- we can investigate this farther by joining departments to the query to see how they overlap
 select a.product_name, a.aisle, a.order_num
 from 
@@ -108,8 +107,55 @@ join
 where product_rank <= 3
 order by b.aisle_rank, a.product_rank;
 
+--Rewriting using subquery factoring
+
+with aisle_orders as (
+    select 
+        p.product_name, 
+        a.aisle, 
+        count(*) order_num
+    from products p
+    join orders_products_prior op on p.product_id = op.product_id
+    join aisles a on a.aisle_id = p.aisle_id
+    group by p.product_name, a.aisle
+    order by count(*) desc
+),
+aisle_orders_rank as (
+    select 
+        ao.product_name, 
+        ao.aisle, 
+        ao.order_num, 
+        rank() over (
+            partition by ao.aisle 
+            order by ao.order_num desc) as product_rank
+    from aisle_orders ao
+),
+aisle_rank as (
+    select 
+        a.aisle, 
+        count(*) aisle_order_num,  
+        rank() over (
+            order by count(*) desc) as aisle_rank
+    from products p
+    join orders_products_prior op 
+    on p.product_id = op.product_id
+    join aisles a 
+    on a.aisle_id = p.aisle_id
+    group by a.aisle
+    order by count(*) desc
+)
+select 
+    aor.product_name, 
+    aor.aisle, 
+    aor.order_num
+from aisle_orders_rank aor
+join aisle_rank ar
+on aor.aisle = ar.aisle
+where aor.product_rank <= 3
+order by ar.aisle_rank, aor.product_rank;;
+
 --investigating the above query but with added departments
--- as we can while the frozen juice ailse is the least frequented ailse, the other ailses in the frozen department drag up the number of orders which is why we see the bulk department lower in the deopartments query.
+--as we can while the frozen juice aisle is the least frequented aisle, the other aisles in the frozen department drag up the number of orders which is why we see the bulk department lower in the departments query.
 select a.product_name, a.aisle, d.department, a.order_num
 from 
     (
@@ -146,3 +192,57 @@ join departments d
 where product_rank <= 3
  and (department = 'frozen' or department = 'bulk')
 order by b.aisle_rank, a.product_rank;
+
+
+--Rewriting above query using subquery factoring
+with aisle_orders as (
+    select 
+        p.product_name, 
+        a.aisle, 
+        count(*) order_num
+    from products p
+    join orders_products_prior op on p.product_id = op.product_id
+    join aisles a on a.aisle_id = p.aisle_id
+    group by p.product_name, a.aisle
+    order by count(*) desc
+),
+aisle_orders_rank as (
+    select 
+        ao.product_name, 
+        ao.aisle, 
+        ao.order_num, 
+        rank() over (
+            partition by ao.aisle 
+            order by ao.order_num desc) as product_rank
+    from aisle_orders ao
+),
+aisle_rank as (
+    select 
+        a.aisle, 
+        count(*) aisle_order_num,  
+        rank() over (
+            order by count(*) desc) as aisle_rank
+    from products p
+    join orders_products_prior op 
+    on p.product_id = op.product_id
+    join aisles a 
+    on a.aisle_id = p.aisle_id
+    group by a.aisle
+    order by count(*) desc
+)
+select 
+    aor.product_name, 
+    aor.aisle, 
+    d.department, 
+    aor.order_num
+from aisle_orders_rank aor
+join aisle_rank ar
+on aor.aisle = ar.aisle
+join products p
+on aor.product_name = p.product_name
+join departments d 
+on p.department_id = d.department_id
+where aor.product_rank <= 3
+--and (d.department = 'frozen' or d.department = 'bulk')
+order by ar.aisle_rank, aor.product_rank;
+

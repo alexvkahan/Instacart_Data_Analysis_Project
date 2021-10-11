@@ -4,108 +4,81 @@ create view order_products_test as (
     fetch first 1000 rows only
 );
 
--- contains Order_ID, product_id, order added t0 cart, and if it was reordered, also an ID table with ids being a unique combo of product and order id
-select * from orders_products_prior
-fetch first 10 rows only;
-
---gives product ID, product_name, aisle_id, and department_id
-select * from products
-fetch first 10 rows only;
-
---shows most commonly ordered items
---maybe remove later and only leave a more detailed query with department and/or ailse info below
-select p.product_name, count(*)
+--Find top 10 products by total orders
+--Join order products prior and products and aggregate by product name
+select 
+    p.product_name, 
+    count(*) as total_orders
 from products p
-join orders_products_prior op on p.product_id = op.product_id
+join orders_products_prior op 
+on p.product_id = op.product_id
 group by p.product_name
 order by count(*) desc
 fetch first 10 rows only;
 
---shows most commonly ordered items by with department and aisle
---avacado is a fruit
-select p.product_name, d.department,a.aisle, count(*)
+--Bananas and Organic Bananas are the most popular items
+
+--Rewriting above query to include department and aisle information
+--Join orders products prior, products, departments, and aisle tables and aggregate by product name
+select 
+    p.product_name, 
+    d.department,a.aisle, 
+    count(*) as total_orders
 from products p
-join orders_products_prior op on p.product_id = op.product_id
-join departments d on d.department_id = p.department_id
-join aisles a on a.aisle_id = p.aisle_id
+join orders_products_prior op 
+on p.product_id = op.product_id
+join departments d 
+on d.department_id = p.department_id
+join aisles a 
+on a.aisle_id = p.aisle_id
 group by p.product_name, d.department, a.aisle
-order by count(*) desc
+order by total_orderrs desc
 fetch first 10 rows only;
 
-select * from departments;
+-- Check to see if there are any orders for a product that cannot be found in the products table or a product that has never been ordered
 
-select * from aisles;
-
---most common departments in orders
---produce is by far the most common department while bulk is the least. As a result stores would be best set up in such a way that the produce department where people regularly shop for fresh food is most accesible while bulk goods that people only need to buy occasionally is more tucked away.
-select d.department, count(*)
+select 
+    p.id, 
+    p.product_id, 
+    p.aisle_id,
+    p.department_id,
+    op.order_id, 
+    op.add_to_cart_order,
+    op.reordered
 from products p
-join orders_products_prior op on p.product_id = op.product_id
-join departments d on d.department_id = p.department_id
-group by d.department
-order by count(*) desc;
+full outer join orders_products_prior op 
+on p.product_id = op.product_id
+where p.product_name is null 
+or op.order_id is null;
 
---most common products for each department
--- could rewrite with with clauses if desired
---shows product name with the most common orders ordered by the most common deparments 
-select a. product_name, a.department, order_num
-from 
-    (
-    select product_name, department, order_num, rank() over (partition by department order by order_num desc) as product_rank
-    from
-        (
-        select p.product_name, d.department, count(*) order_num
-        from products p
-        join orders_products_prior op on p.product_id = op.product_id
-        join departments d on d.department_id = p.department_id
-        group by p.product_name, d.department
-        order by count(*) desc
-        ) 
-    order by order_num desc
-    ) a
-join 
-    (
-    select department, dep_order_num ,department_rank
-    from
-        (
-        select d.department, count(*) dep_order_num,  rank() over (order by count(*) desc) as department_rank
-        from products p
-        join orders_products_prior op on p.product_id = op.product_id
-        join departments d on d.department_id = p.department_id
-        group by d.department
-        order by count(*) desc
-        )
-    ) b
-    on a.department = b.department
-where product_rank <= 3
-order by b.department_rank, a.product_rank
-;
+-- There is no correspoding product for product ID 6816
+-- There are several products have never been ordered 
+-- These products could be removed from the app
 
+--Check if a product can be ordered multipe times in the same order
 
---testing to see if there are any orders where there is a product that cannot be found in the products table and vise versa
--- this lets us know that data has some flaws, namely there is no correspoding product for product ID 6816, highlighting the importance of data integrity
--- additionally this also shows what products have not been ordered at all and there for could be usefull information for stores to decide to not carry those products once a propper time frame is reached
-select *
-from products p
-full outer join orders_products_prior op on p.product_id = op.product_id
-where p.product_name is null or op.order_id is null;
-
---want know if a product can be ordered multipe times in the same order
---this shows that each product is not duplicated within an order.  Order quantity for each product is not known
 select op.order_id, p.product_id, count(*)
 from products p
 join orders_products_prior op on p.product_id = op.product_id
 group by op.order_id, p.product_id
 having count(*) > 1;
 
-select op.order_id, count(*) as num_products
+--This shows that each product is not duplicated within an order
+--Order quantity for each product is not known
+
+--Find the total number of products within each order
+select 
+    op.order_id, 
+    count(*) as num_products
 from products p
 join order_products_test op on p.product_id = op.product_id
 group by op.order_id
-order by count(*) desc;
+order by num_products desc;
 
+--Find summary stats for the number of products in each order
+--Include Mean, Median, Mode, Min, and Max
 select 
-    avg(count(*)) avg_num_products,
+    round(avg(count(*)), 2) avg_num_products,
     min(count(*)) min_num_products,
     max(count(*)) max_num_products,
     median(count(*)) median_num_products,
@@ -113,9 +86,10 @@ select
 from orders_products_prior
 group by orders_products_prior.order_id;
 
---Does order size change with order frequency?
+--The average order size is about 10 products
 
--- top customers, from orders spreadsheet
+-- Find if order size change with order frequency
+-- Top customers based on the number of orders
 select
     o.user_id,
     count(*) num_orders
@@ -123,24 +97,53 @@ from orders o
 group by o.user_id
 order by num_orders desc, o.user_id;
 
--- connecting customers to products per order
-select o.user_id, o.order_id, count(op.product_id) prod_count
+-- Find the number of products in each order with user id included
+select 
+    o.user_id, 
+    o.order_id, 
+    count(op.product_id) prod_count
 from orders o
 join orders_products_prior op
     on o.order_id = op.order_id
 group by o.user_id, o.order_id
 ;
 
---average products per order by customers, sub query from query above
-select user_id, round(avg(prod_count), 2) products_per_order
+--Find average products per order for each user
+select 
+    user_id, 
+    round(avg(prod_count), 2) products_per_order
 from (
-    select o.user_id, o.order_id, count(op.product_id) prod_count
+    select 
+        o.user_id, 
+        o.order_id, 
+        count(op.product_id) prod_count
     from orders o
     join orders_products_prior op
         on o.order_id = op.order_id
     group by o.user_id, o.order_id
     )
-group by user_id;
+group by user_id
+order by products_per_order desc;
+
+--Rewriting above using subquery factoring
+with user_order_prod_count as (
+    select 
+        o.user_id, 
+        o.order_id, 
+        count(op.product_id) prod_count
+    from orders o
+    join orders_products_prior op
+        on o.order_id = op.order_id
+    group by o.user_id, o.order_id
+)
+select 
+    u.user_id, 
+    round(avg(u.prod_count), 2) products_per_order
+from user_order_prod_count u
+group by user_id
+order by products_per_order desc;
+
+--CUTOFF HERE ON 10/11 - PICK UP FROM THIS POINT NEXT TIME TO REWRITE THE BELOW USING ADDITIONAL SUBQUERIES AND SUBQUERY FACTORING
 
 -- products per order and number of total orders by customer
 -- joining above with number of orders per customer, adding column to bin how often customers order
@@ -181,7 +184,8 @@ join (
     on a.user_id = b.user_id
 );
 
-select * from product_order_analysis;
+select * 
+from product_order_analysis;
 
 --this table is used to compare the number of products being ordered per order across customers who order at different frequencies
 --the results indicate that the average products per order do not change as customers' order frequency changes. This means on average, customers who order more in a single site vist do not do so because they visit less reqularly and vice versa for higher frequency shoppers.
@@ -214,4 +218,3 @@ from orders_products_prior opp
 join products p on opp.product_id = p.product_id
 group by p.product_name
 order by product_order_count desc;
-

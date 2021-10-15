@@ -143,24 +143,60 @@ from user_order_prod_count u
 group by user_id
 order by products_per_order desc;
 
---CUTOFF HERE ON 10/11 - PICK UP FROM THIS POINT NEXT TIME TO REWRITE THE BELOW USING ADDITIONAL SUBQUERIES AND SUBQUERY FACTORING
+--Summary stats of total orders for each customer
 
--- products per order and number of total orders by customer
--- joining above with number of orders per customer, adding column to bin how often customers order
---not to self, remember to say why the below cut offs were chosen for the different frequencies, I think the numbers come from an earlier query
-create table product_order_analysis as
+select
+    count(*) total_orders,
+    min(count(*)) min_orders,
+    max(count(*)) max_orders,
+    median(count(*)) median_orders,
+    stats_mode(count(*)) mode_orders
+from orders
+group by user_id;
+
+-- Find products per order and number of total orders by customer
+-- Joining above query with number of orders per customer, adding column to bin how often customers order
+--B
+create or replace view product_order_analysis as
 (
-select a.user_id, round(a.products_per_order,2) products_per_order , b.num_orders, round((a.products_per_order * b.num_orders),2) total_products, 
+select 
+    a.user_id, 
+    round(a.products_per_order,2) products_per_order, 
+    b.num_orders, 
+    round((a.products_per_order * b.num_orders),2) total_products, 
 Case
-    when b.num_orders = 4   -- could even right as a further sub query
+    when b.num_orders = (select
+                            min(count(*)) min_orders
+                        from orders
+                        group by user_id)
         then 'min frequency'
-    when b.num_orders between 5 and 9
+    when b.num_orders between (select
+                                min(count(*)) min_orders
+                              from orders
+                              group by user_id) + 1
+                      and     (select
+                                median(count(*)) median_orders
+                              from orders
+                              group by user_id) - 1  
         then 'low frequency'
-    when b.num_orders = 10
+    when b.num_orders = (select
+                            median(count(*)) median_orders
+                        from orders
+                        group by user_id)    
         then 'median frequency'
-    when b.num_orders between 11 and 99
+    when b.num_orders between (select
+                                median(count(*)) median_orders
+                              from orders
+                              group by user_id) + 1
+                      and     (select
+                                max(count(*)) max_orders
+                              from orders
+                              group by user_id) - 1
         then 'high frequency'
-    when b.num_orders = 100
+    when b.num_orders = (select
+                            max(count(*)) max_orders
+                        from orders
+                        group by user_id)
         then 'max frequency'
 end customer_order_frequency
 from (
@@ -185,11 +221,85 @@ join (
 );
 
 select * 
-from product_order_analysis;
+from product_order_analysis
+order by user_id;
 
---this table is used to compare the number of products being ordered per order across customers who order at different frequencies
---the results indicate that the average products per order do not change as customers' order frequency changes. This means on average, customers who order more in a single site vist do not do so because they visit less reqularly and vice versa for higher frequency shoppers.
---As a result insta cart finds more value in higher frequency shoppers because those customers overall order more products.
+--Rewriting above query using subquery factoring
+
+create or replace view product_order_analysis1 as 
+with min_orders as (
+    select
+        min(count(*)) min_orders
+    from orders
+    group by user_id
+),
+median_orders as (
+    select
+        median(count(*)) median_orders
+    from orders
+    group by user_id
+),
+max_orders as (
+    select
+        max(count(*)) max_orders
+    from orders
+    group by user_id
+),
+order_prod_total as (
+    select 
+        o.user_id, 
+        o.order_id, 
+        count(op.product_id) prod_count
+    from orders o
+    join orders_products_prior op
+        on o.order_id = op.order_id
+    group by o.user_id, o.order_id
+),
+avg_prod_per_order as (
+    select 
+        op.user_id, 
+        avg(op.prod_count) products_per_order
+    from order_prod_total op
+    group by user_id
+),
+total_orders as (
+    select
+        o.user_id,
+        count(*) num_orders
+    from orders o
+    group by o.user_id
+)
+select 
+    a.user_id, 
+    round(a.products_per_order,2) products_per_order, 
+    t.num_orders, 
+    round((a.products_per_order * t.num_orders),2) total_products,
+Case
+    when t.num_orders = (select * from min_orders)   
+        then 'min frequency'
+    when t.num_orders between (select * from min_orders) + 1 and (select * from median_orders) - 1
+        then 'low frequency'
+    when t.num_orders = (select * from median_orders)
+        then 'median frequency'
+    when t.num_orders between (select * from median_orders) + 1 and (select * from max_orders) - 1
+        then 'high frequency'
+    when t.num_orders = (select * from max_orders)
+        then 'max frequency'
+end customer_order_frequency
+from avg_prod_per_order a
+join total_orders t
+    on a.user_id = t.user_id
+order by a.user_id
+;
+
+
+    
+--CUTOFF FOR 10/15 START FROM HERE NEXT TIME
+
+--Compare the number of products per order across customers who order at different frequencies.
+--The results indicate that the average products per order does change as customers' order frequency changes. 
+--This means on average, order frequency does not indicate the number of products per order.
+--As a result insta cart finds more value in higher frequency shoppers because those customers order more products overall.
 select
     customer_order_frequency,
     count(*) num_customer,

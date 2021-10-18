@@ -5,6 +5,7 @@ fetch first 10 rows only;
 
 
 --Create lookup table for day of week to convert numberic value to text
+--assigns each numeric day of the week to its equivalent text day to later be used to join to the order tables for easier analysis.
 create table dow_lookup
 (
     dow_id number primary key,
@@ -37,6 +38,8 @@ create table dow_lookup
 
 -- Option 1: this approach uses a case statement and joins on the previously created lookup table for day of week.
 --It also does not create duplicates for the subtotal for each day of the week
+--joins day of week to order table
+--order by statement uses case statement because textual values are default ordered alphabetically  
 select 
     dl.day_of_week,
     o.order_hour_of_day,
@@ -59,7 +62,8 @@ order by
 
 
 
---Option 2: Using a subquery. This Method creates duplicate rows for the subtotal of each day of the week
+--Option 2: Using a subquery. 
+--This Method creates duplicate rows for the subtotal of each day of the week
 select 
     a.day_of_week,
     a.order_hour_of_day,
@@ -198,6 +202,10 @@ from orders o
 group by o.order_hour_of_day
 order by num_orders desc;
 
+--10am is the most common order time and 3am is the least common
+
+
+-- counting stats for orders 
 select
     count(*) total_orders,
     min(count(*)) min_orders,
@@ -206,8 +214,6 @@ select
     stats_mode(count(*)) mode_orders
 from orders
 group by user_id;
-
---10am is the most common order time and 3am is the least common
 
 
 --Top customers based on total orders

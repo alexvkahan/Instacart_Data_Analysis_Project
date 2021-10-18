@@ -1,3 +1,5 @@
+--this file is used for describing the different tables provided by the data set and viewing the first 10 rows of each table to get an example of rows in each table.
+
 describe demo.aisles;
 
 describe demo.departments;

@@ -11,7 +11,7 @@ select
     count(*) as total_orders
 from products p
 join orders_products_prior op 
-on p.product_id = op.product_id
+    on p.product_id = op.product_id
 group by p.product_name
 order by count(*) desc
 fetch first 10 rows only;
@@ -26,11 +26,11 @@ select
     count(*) as total_orders
 from products p
 join orders_products_prior op 
-on p.product_id = op.product_id
+    on p.product_id = op.product_id
 join departments d 
-on d.department_id = p.department_id
+    on d.department_id = p.department_id
 join aisles a 
-on a.aisle_id = p.aisle_id
+    on a.aisle_id = p.aisle_id
 group by p.product_name, d.department, a.aisle
 order by total_orderrs desc
 fetch first 10 rows only;
@@ -47,7 +47,7 @@ select
     op.reordered
 from products p
 full outer join orders_products_prior op 
-on p.product_id = op.product_id
+    on p.product_id = op.product_id
 where p.product_name is null 
 or op.order_id is null;
 
@@ -59,7 +59,8 @@ or op.order_id is null;
 
 select op.order_id, p.product_id, count(*)
 from products p
-join orders_products_prior op on p.product_id = op.product_id
+join orders_products_prior op 
+    on p.product_id = op.product_id
 group by op.order_id, p.product_id
 having count(*) > 1;
 
@@ -71,7 +72,8 @@ select
     op.order_id, 
     count(*) as num_products
 from products p
-join order_products_test op on p.product_id = op.product_id
+join order_products_test op 
+    on p.product_id = op.product_id
 group by op.order_id
 order by num_products desc;
 
@@ -315,9 +317,8 @@ group by customer_order_frequency
         when customer_order_frequency = 'high frequency' then 4
         when customer_order_frequency = 'max frequency' then 5
     end */
-    order by decode(customer_order_frequency, 'min frequency', 1, 'low frequency', 2, 'median frequency', 3, 'high frequency', 4, 'max frequency', 5)
+order by decode(customer_order_frequency, 'min frequency', 1, 'low frequency', 2, 'median frequency', 3, 'high frequency', 4, 'max frequency', 5)
 ;
 --The results indicate that the average products per order does change as customers' order frequency changes. 
 --This means on average, order frequency does not indicate the number of products per order.
 --As a result insta cart finds more value in higher frequency shoppers because those customers order more products overall.
-

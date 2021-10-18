@@ -1,6 +1,5 @@
 
---granting permissions on all tables to different project members
--- syntax: grant 
+--granting permissions on all tables to different project members 
 GRANT ALL ON demo.aisles TO alkahan, camuhl, thompsy;
 GRANT ALL ON demo.departments TO alkahan, camuhl, thompsy;
 GRANT ALL ON demo.order_products_train TO alkahan, camuhl, thompsy;
@@ -9,7 +8,6 @@ GRANT ALL ON demo.orders_products_prior TO alkahan, camuhl, thompsy;
 GRANT ALL ON demo.products TO alkahan, camuhl, thompsy;
 
 --giving users ablitity to create tables
---syntax
 ALTER USER alkahan quota unlimited on data;
 ALTER USER camuhl quota unlimited on data;
 ALTER USER thompsy quota unlimited on data;

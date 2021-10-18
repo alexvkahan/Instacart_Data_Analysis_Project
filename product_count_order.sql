@@ -293,13 +293,9 @@ order by a.user_id
 ;
 
 
-    
---CUTOFF FOR 10/15 START FROM HERE NEXT TIME
+
 
 --Compare the number of products per order across customers who order at different frequencies.
---The results indicate that the average products per order does change as customers' order frequency changes. 
---This means on average, order frequency does not indicate the number of products per order.
---As a result insta cart finds more value in higher frequency shoppers because those customers order more products overall.
 select
     customer_order_frequency,
     count(*) num_customer,
@@ -321,10 +317,7 @@ group by customer_order_frequency
     end */
     order by decode(customer_order_frequency, 'min frequency', 1, 'low frequency', 2, 'median frequency', 3, 'high frequency', 4, 'max frequency', 5)
 ;
+--The results indicate that the average products per order does change as customers' order frequency changes. 
+--This means on average, order frequency does not indicate the number of products per order.
+--As a result insta cart finds more value in higher frequency shoppers because those customers order more products overall.
 
--- Top overal products
-select p.product_name, count(p.product_name) product_order_count
-from orders_products_prior opp
-join products p on opp.product_id = p.product_id
-group by p.product_name
-order by product_order_count desc;

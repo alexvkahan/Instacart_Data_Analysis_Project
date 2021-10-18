@@ -1,10 +1,10 @@
 --Most popular days and time to place orders
-
-select * from orders
+select * 
+from orders
 fetch first 10 rows only;
 
+
 --Create lookup table for day of week to convert numberic value to text
--- look into doing it with the small plsql block found here https://stackoverflow.com/questions/39576/best-way-to-do-multi-row-insert-in-oracle
 create table dow_lookup
 (
     dow_id number primary key,
@@ -33,16 +33,17 @@ create table dow_lookup
  values (6, 'Saturday');
 
 
---Option 1
+-- Below are various methods of showing the number of orders in a specific hour of a specific day as well as roll ups for total orders on a given day and overall
 
--- After testing, this approach appears to be most efficient with execution time of ~.506 seconds. It also does not create duplicates for the subtotal for each day of the week
-
+-- Option 1: this approach uses a case statement and joins on the previously created lookup table for day of week.
+--It also does not create duplicates for the subtotal for each day of the week
 select 
     dl.day_of_week,
     o.order_hour_of_day,
     count(*) num_orders
 from orders o
-join dow_lookup dl on o.order_dow = dl.dow_id
+join dow_lookup dl 
+    on o.order_dow = dl.dow_id
 group by rollup(dl.day_of_week, o.order_hour_of_day)
 order by
      CASE
@@ -56,75 +57,80 @@ order by
      END ASC,
      o.order_hour_of_day;
 
---Option 2
 
---Using a subquery is less efficient than option 1 and creates duplicate rows for the subtotal of each day of the week
 
---select 
---    a.day_of_week,
---    a.order_hour_of_day,
---    a.num_orders
---from (
---    select 
---        dl.dow_id,
---        dl.day_of_week,
---        o.order_hour_of_day,
---        count(*) num_orders
---    from orders o
---    join dow_lookup dl on o.order_dow = dl.dow_id
---    group by rollup(dl.dow_id, dl.day_of_week, o.order_hour_of_day)
---    order by dl.dow_id, o.order_hour_of_day
---) a;
+--Option 2: Using a subquery. This Method creates duplicate rows for the subtotal of each day of the week
+select 
+    a.day_of_week,
+    a.order_hour_of_day,
+    a.num_orders
+from (
+    select 
+        dl.dow_id,
+        dl.day_of_week,
+        o.order_hour_of_day,
+        count(*) num_orders
+    from orders o
+    join dow_lookup dl 
+        on o.order_dow = dl.dow_id
+    group by rollup(dl.dow_id, dl.day_of_week, o.order_hour_of_day)
+    order by dl.dow_id, o.order_hour_of_day
+) a;
 
---Option 3
 
---Using Subquery Factoring is less efficient than option 1 and creates duplicate rows for the subtotal of each day of the week
 
---with a as (
---    select 
---        dl.dow_id,
---        dl.day_of_week,
---        o.order_hour_of_day,
---        count(*) num_orders
---    from orders o
---    join dow_lookup dl on o.order_dow = dl.dow_id
---    group by rollup(dl.dow_id, dl.day_of_week, o.order_hour_of_day)
---    order by dl.dow_id, o.order_hour_of_day
---    )
---select 
---    a.day_of_week,
---    a.order_hour_of_day,
---    a.num_orders
---from a;
+--Option 3: Similar to option 2 but us subquery factoring. 
+--Also creates duplicate rows for the subtotal of each day of the week
+with a as (
+    select 
+        dl.dow_id,
+        dl.day_of_week,
+        o.order_hour_of_day,
+        count(*) num_orders
+    from orders o
+    join dow_lookup dl 
+        on o.order_dow = dl.dow_id
+    group by rollup(dl.dow_id, dl.day_of_week, o.order_hour_of_day)
+    order by dl.dow_id, o.order_hour_of_day
+    )
+select 
+    a.day_of_week,
+    a.order_hour_of_day,
+    a.num_orders
+from a;
+
 
 --Top 10 Order Times
---The most popular time to order groceries is Sunday Afternoon and Monday Morning
 select 
     dl.day_of_week,
     o.order_hour_of_day,
     count(*) num_orders
 from orders o
-join dow_lookup dl on o.order_dow = dl.dow_id
+join dow_lookup dl 
+    on o.order_dow = dl.dow_id
 group by dl.day_of_week, o.order_hour_of_day
 order by num_orders desc
 fetch first 10 rows only;
 
---Bottom 10 Order Times
---The least popular time to order groceries is 3-4 am most days of the week
+--The most popular time to order groceries is Sunday Afternoon and Monday Morning
 
+
+--Bottom 10 Order Times
 select 
     dl.day_of_week,
     o.order_hour_of_day,
     count(*) num_orders
 from orders o
-join dow_lookup dl on o.order_dow = dl.dow_id
+join dow_lookup dl 
+    on o.order_dow = dl.dow_id
 group by dl.day_of_week, o.order_hour_of_day
 order by num_orders asc
 fetch first 10 rows only;
 
---Top 3 order times for each day of the week
---Results show that the most common time to place an order is from 10am-3pm
+--The least popular time to order groceries is 3-4 am most days of the week
 
+
+--Top 3 order times for each day of the week
 --This inner query finds the total order count for each hour of each day of the week
 with order_day_time as ( 
     select 
@@ -132,7 +138,8 @@ with order_day_time as (
         o.order_hour_of_day,
         count(*) num_orders
     from orders o
-    join dow_lookup dl on o.order_dow = dl.dow_id
+    join dow_lookup dl 
+        on o.order_dow = dl.dow_id
     group by dl.day_of_week, o.order_hour_of_day
     order by num_orders asc
 ), 
@@ -165,19 +172,25 @@ order by
           WHEN day_of_week = 'Saturday' THEN 7
      END ASC,
      num_orders desc;
+     
+--Results show that the most common time to place an order is from 10am-3pm
+
+
 
 --Most popular day of week to order
---Monday is the most popular day to order groceries and Thursday is the least
 select 
     dl.day_of_week,
     count(*) num_orders
 from orders o
-join dow_lookup dl on o.order_dow = dl.dow_id
+join dow_lookup dl 
+    on o.order_dow = dl.dow_id
 group by dl.day_of_week
 order by num_orders desc;
 
---Most popular time of day
---10am is the most common order time and 3am is the least common
+--Monday is the most popular day to order groceries and Thursday is the least
+
+
+--Most popular time of day to order
 select 
     o.order_hour_of_day,
     count(*) num_orders
@@ -194,11 +207,15 @@ select
 from orders
 group by user_id;
 
---Top customers
+--10am is the most common order time and 3am is the least common
+
+
+--Top customers based on total orders
 select
     o.user_id,
     count(*) num_orders
 from orders o
 group by o.user_id
 order by num_orders desc, o.user_id;
+
 

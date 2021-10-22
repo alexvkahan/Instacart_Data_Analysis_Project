@@ -5,6 +5,10 @@ Created By: Alex Kahan, Chris Muhlenkamp, Thomas Psyhogeos
 
 Repo Artifacts and Descriptions:
 
+Data Loading Process:
+
+To load the project data into our Autonomous Data Warehouse, we used the the Data Loading Tool from the SQL Workshop Utility in APEX.  APEX is a free low code development tool provided with the Oracle database and is preinstalled and configured for use in the Autonomous Database.  The steps for loading the data files into the database can be found here: [https://blogs.oracle.com/apex/post/load-data-into-existing-tables-with-apex-191](url)
+
 The data used in this project can be found in the following link: https://www.kaggle.com/c/instacart-market-basket-analysis/data
 
 Data Model:
@@ -26,8 +30,4 @@ SQL Scripts:
 [Product_Count_Order.sql](https://github.com/alexvkahan/sql-club/blob/main/Product_Count_Order.sql) - Script for analysis of order products table, looking at popular items, orders by customers & products, etc.
 
 [Departments_Aisle_Analysis.sql](https://github.com/alexvkahan/sql-club/blob/main/Departments_Aisle_Analysis.sql) - Script for analysis of products, looking at departments and aisles, popular items, order totals, etc.
-
-Data Loading Process:
-
-To load the project data into our Autonomous Data Warehouse, we used the the Data Loading Tool from the SQL Workshop Utility in APEX.  APEX is a free low code development tool provided with the Oracle database and is preinstalled and configured for use in the Autonomous Database.  The steps for loading the data files into the database can be found here: [https://blogs.oracle.com/apex/post/load-data-into-existing-tables-with-apex-191](url)
 

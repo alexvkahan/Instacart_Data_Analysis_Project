@@ -1,7 +1,7 @@
 # Instacart Data Analysis Project
 Dedicated repo for the Instacart Data Analysis Project completed as part of SQL Club
 
-Created By: Alex Kahan, Chris Muhlenkamp, Thomas Psyhogeos
+Created By: [Alex Kahan](www.linkedin.com/in/alexvkahan), [Chris Muhlenkamp](https://www.linkedin.com/in/chris-muhlenkamp/), [Thomas Psyhogeos](https://www.linkedin.com/in/thomas-psy/)
 
 ## Repo Artifacts and Descriptions:
 

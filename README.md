@@ -3,7 +3,7 @@ Dedicated repo for the Instacart Data Analysis Project completed as part of SQL 
 
 Created By: Alex Kahan, Chris Muhlenkamp, Thomas Psyhogeos
 
-Table of Contents:
+Repo Artifacts and Descriptions:
 
 The data used in this project can be found in the following link: https://www.kaggle.com/c/instacart-market-basket-analysis/data
 

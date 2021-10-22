@@ -1,5 +1,5 @@
-# sql-club
-General repo for SQL club projects and activities
+# Instacart Data Analysis Project
+Dedicated repo for the Instacart Data Analysis Project completed as part of SQL Club
 
 Created By: Alex Kahan, Chris Muhlenkamp, Thomas Psyhogeos
 

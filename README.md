@@ -17,11 +17,15 @@ Conceptual Architecture:
 
 SQL Scripts:
 
-[Instacart_Data_Discovery.sql](https://github.com/alexvkahan/sql-club/blob/main/Instacart_Data_Discovery.sql)
+[Demo_Administration_Tasks.sql](https://github.com/alexvkahan/sql-club/blob/main/Demo_Administration_Tasks.sql) - Altering user perrmissions for each contributor and creating synonyms for relevant database objects to simplify queries.
 
-Demo_Administration_Tasks.sql
+[Instacart_Data_Discovery.sql](https://github.com/alexvkahan/sql-club/blob/main/Instacart_Data_Discovery.sql) - Simple script to describe each table and query for 10 rows from each to familiarize ourselves with the dataset.
 
+[Orders.sql](https://github.com/alexvkahan/sql-club/blob/main/Orders.sql) - Script for analysis of orders table, looking at popular order days and times, general order statistics, etc. 
 
+[Product_Count_Order.sql](https://github.com/alexvkahan/sql-club/blob/main/Product_Count_Order.sql) - Script for analysis of order products table, looking at popular items, orders by customers & products, etc.
+
+[Departments_Aisle_Analysis.sql](https://github.com/alexvkahan/sql-club/blob/main/Departments_Aisle_Analysis.sql) - Script for analysis of products, looking at departments and aisles, popular items, order totals, etc.
 
 Data Loading Process:
 

@@ -17,7 +17,7 @@ Conceptual Architecture:
 
 SQL Scripts:
 
-![Instacart_Data_Discovery.sql](https://github.com/alexvkahan/sql-club/blob/main/Instacart_Data_Discovery.sql)
+[Instacart_Data_Discovery.sql](https://github.com/alexvkahan/sql-club/blob/main/Instacart_Data_Discovery.sql)
 
 Demo_Administration_Tasks.sql
 
